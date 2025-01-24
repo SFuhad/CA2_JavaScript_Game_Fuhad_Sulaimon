@@ -1,10 +1,10 @@
-// get canvas
+//Canvas set up
 const canvas = document.getElementById('gameCanvas');
 canvas.width = 800;
 canvas.height = 600;
 const ctx = canvas.getContext('2d');
 
-// Loading game assets
+// Load assets
 const playerImg = new Image();
 playerImg.src = './assets/player.png';
 const enemyImg = new Image();
@@ -14,19 +14,24 @@ starImg.src = './assets/star.png';
 const bgImg = new Image();
 bgImg.src = './assets/background.png';
 
-//Setting up the gAme variables
+// Load sounds
+const collectSound = new Audio('./assets/collect.mp3');
+const gameOverSound = new Audio('./assets/gameover.mp3');
+
+// Game variables
 let player = { x: 400, y: 500, width: 50, height: 50, speed: 5 };
 let enemy = { x: Math.random() * 750, y: 0, width: 50, height: 50, speed: 2 };
 let star = { x: Math.random() * 750, y: 0, width: 30, height: 30, speed: 3 };
 let score = 0;
 let gameOver = false;
+let showReplayButton = false;
 
-//Setting up controls
+// set keybinds
 let keys = {};
 window.addEventListener('keydown', (e) => (keys[e.key] = true));
 window.addEventListener('keyup', (e) => (keys[e.key] = false));
 
-// setting up collision
+// Collision
 function isColliding(obj1, obj2) {
   return (
     obj1.x < obj2.x + obj2.width &&
@@ -36,7 +41,7 @@ function isColliding(obj1, obj2) {
   );
 }
 
-// loop through the game
+// Game loop
 function update() {
   if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
   if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
@@ -55,9 +60,15 @@ function update() {
     star.x = Math.random() * 750;
   }
 
-  if (isColliding(player, enemy)) gameOver = true;
+  if (isColliding(player, enemy)) {
+    if (!gameOver) gameOverSound.play(); // Play game over sound
+    gameOver = true;
+    showReplayButton = true;
+  }
+
   if (isColliding(player, star)) {
     score++;
+    collectSound.play(); // Play star collect sound
     star.y = 0;
     star.x = Math.random() * 750;
   }
@@ -77,7 +88,45 @@ function draw() {
     ctx.fillStyle = 'red';
     ctx.font = '40px Arial';
     ctx.fillText('Game Over!', canvas.width / 2 - 100, canvas.height / 2);
+    if (showReplayButton) drawReplayButton();
   }
+}
+
+function drawReplayButton() {
+  ctx.fillStyle = 'white';
+  ctx.fillRect(canvas.width / 2 - 75, canvas.height / 2 + 40, 150, 50);
+  ctx.fillStyle = 'black';
+  ctx.font = '20px Arial';
+  ctx.fillText('Replay', canvas.width / 2 - 35, canvas.height / 2 + 75);
+
+  canvas.addEventListener('click', handleReplayClick);
+}
+
+function handleReplayClick(event) {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // Check if click is within replay button bounds
+  if (
+    x > canvas.width / 2 - 75 &&
+    x < canvas.width / 2 + 75 &&
+    y > canvas.height / 2 + 40 &&
+    y < canvas.height / 2 + 90
+  ) {
+    resetGame();
+  }
+}
+
+function resetGame() {
+  gameOver = false;
+  showReplayButton = false;
+  score = 0;
+  player = { x: 400, y: 500, width: 50, height: 50, speed: 5 };
+  enemy = { x: Math.random() * 750, y: 0, width: 50, height: 50, speed: 2 };
+  star = { x: Math.random() * 750, y: 0, width: 30, height: 30, speed: 3 };
+  canvas.removeEventListener('click', handleReplayClick);
+  gameLoop();
 }
 
 function gameLoop() {
@@ -85,6 +134,8 @@ function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
+  } else {
+    draw();
   }
 }
 
