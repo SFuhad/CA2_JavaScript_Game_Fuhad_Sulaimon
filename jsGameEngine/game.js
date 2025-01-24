@@ -1,4 +1,4 @@
-//Canvas set up
+// Canvas set up
 const canvas = document.getElementById('gameCanvas');
 canvas.width = 800;
 canvas.height = 600;
@@ -17,6 +17,7 @@ bgImg.src = './assets/background.png';
 // Load sounds
 const collectSound = new Audio('./assets/collect.mp3');
 const gameOverSound = new Audio('./assets/gameover.mp3');
+const victorySound = new Audio('./assets/victory.mp3');
 
 // Game variables
 let player = { x: 400, y: 500, width: 50, height: 50, speed: 5 };
@@ -24,14 +25,15 @@ let enemy = { x: Math.random() * 750, y: 0, width: 50, height: 50, speed: 2 };
 let star = { x: Math.random() * 750, y: 0, width: 30, height: 30, speed: 3 };
 let score = 0;
 let gameOver = false;
+let gameWon = false;
 let showReplayButton = false;
 
-// set keybinds
+// Controls
 let keys = {};
 window.addEventListener('keydown', (e) => (keys[e.key] = true));
 window.addEventListener('keyup', (e) => (keys[e.key] = false));
 
-// Collision
+// Collision detection
 function isColliding(obj1, obj2) {
   return (
     obj1.x < obj2.x + obj2.width &&
@@ -72,8 +74,14 @@ function update() {
     star.y = 0;
     star.x = Math.random() * 750;
   }
-}
 
+  if (score >= 15 && !gameWon) {
+    gameWon = true;
+    victorySound.play(); // Play victory sound
+    showReplayButton = true;
+  }
+}
+//Gameplay set up
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
@@ -88,6 +96,13 @@ function draw() {
     ctx.fillStyle = 'red';
     ctx.font = '40px Arial';
     ctx.fillText('Game Over!', canvas.width / 2 - 100, canvas.height / 2);
+    if (showReplayButton) drawReplayButton();
+  }
+
+  if (gameWon) {
+    ctx.fillStyle = 'green';
+    ctx.font = '40px Arial';
+    ctx.fillText('You Win!', canvas.width / 2 - 100, canvas.height / 2);
     if (showReplayButton) drawReplayButton();
   }
 }
@@ -120,6 +135,7 @@ function handleReplayClick(event) {
 
 function resetGame() {
   gameOver = false;
+  gameWon = false;
   showReplayButton = false;
   score = 0;
   player = { x: 400, y: 500, width: 50, height: 50, speed: 5 };
@@ -130,7 +146,7 @@ function resetGame() {
 }
 
 function gameLoop() {
-  if (!gameOver) {
+  if (!gameOver && !gameWon) {
     update();
     draw();
     requestAnimationFrame(gameLoop);
